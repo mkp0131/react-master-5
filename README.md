@@ -1,46 +1,134 @@
-# Getting Started with Create React App
+# 리액트 마스터 5
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## react-beautiful-dnd
 
-## Available Scripts
+### 구조
 
-In the project directory, you can run:
+<img src="./constructor.png" />
 
-### `npm start`
+- DragDropContext > Droppable > Draggable 의 3개의 태그로 구성이 이루어져 있다.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```html
+<!-- 드레그 가능 이동공간을 감싸는 container -->
+<DragDropContext>
+  <!-- 드레그 가능 아이템들이 이동할 수 있는 공간 ( 공간간에 이동가능 ) -->
+  <Droppable>
+    <!-- 드레그 가능 아이템 -->
+    <Draggable> </Draggable>
+  </Droppable>
+</DragDropContext>
+```
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+#### DragDropContext
 
-### `npm test`
+- 드레그 가능 이동공간을 감싸는 container
+- onDragEnd 이벤트를 가지고 있어 콜백함수를 실행 가능.
+- 콜백함수로 드레그된 상태를 저장한다.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```js
+const onDragEnd = ({ draggableId, destination, source }: DropResult) => {
+    if (!destination) return;
 
-### `npm run build`
+    setToDos((allBoard) => {
+      const srcBoard = source.droppableId;
+      const srcIndex = source.index;
+      const destBoard = destination.droppableId;
+      const destIndex = destination.index;
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+      if (srcBoard === destBoard) {
+        const copyToDos = [...allBoard[srcBoard]];
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+        copyToDos.splice(srcIndex, 1);
+        copyToDos.splice(destIndex, 0, draggableId);
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+        return {
+          ...allBoard,
+          [srcBoard]: copyToDos,
+        };
+      } else {
+        const copySrcBoard = [...allBoard[srcBoard]];
+        const copyDestBoard = [...allBoard[destBoard]];
 
-### `npm run eject`
+        copySrcBoard.splice(srcIndex, 1);
+        copyDestBoard.splice(destIndex, 0, draggableId);
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+        return {
+          ...allBoard,
+          [srcBoard]: copySrcBoard,
+          [destBoard]: copyDestBoard,
+        };
+      }
+    });
+  };
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+<DragDropContext onDragEnd={onDragEnd}>
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+#### Droppable
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+- 드레그 가능 아이템들이 이동할 수 있는 공간
+- droppableId 고유한 아이디를 가져야한다.
 
-## Learn More
+```js
+<Droppable droppableId={boardId}>
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- 자식들을 넣을땐 제공하는 함수 return 방식으로 넣는다.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```js
+<Droppable droppableId={boardId}>
+  {(provided, { isDraggingOver, draggingFromThisWith }) => {
+    return (
+      <div
+        className={`dnd-board ${
+          isDraggingOver
+            ? 'drag_over'
+            : draggingFromThisWith
+            ? 'drag_leave'
+            : ''
+        }`}
+      >
+        <h2>{boardId.toUpperCase()}</h2>
+        <ul {...provided.droppableProps} ref={provided.innerRef}>
+          {toDos.map((toDo, index) => (
+            <Card toDo={toDo} key={toDo} index={index} />
+          ))}
+          {provided.placeholder}
+        </ul>
+      </div>
+    );
+  }}
+</Droppable>
+```
+
+- 🧤🧤🧤 {provided.placeholder} 로 아이템들이 들어가는 공간을 고정시킨다.
+
+#### Draggable
+
+- 드레그 가능 아이템
+- draggableId 를 속성으로 가진다. 고유한 값
+- index 를 속성으로 가진다. 해당 배열에서 아이템을 find 할때 index가 필요하므로 꼭 map 의 index 를 넣어주도록한다.
+- 자식들을 넣을땐 제공하는 함수 return 방식으로 넣는다.
+
+```js
+<Draggable key={toDo} draggableId={toDo} index={index}>
+  {(provided, { isDragging }) => {
+    return (
+      <li
+        className={`dnd-board__item ${isDragging ? 'drag' : ''}`}
+        ref={provided.innerRef}
+        {...provided.dragHandleProps}
+        {...provided.draggableProps}
+      >
+        {toDo}
+      </li>
+    );
+  }}
+</Draggable>
+```
+
+### 진행중
+
+1. category 생성
+2. trash 생성
+3. category 순서변경
